@@ -20,11 +20,18 @@ import Meta from "./Pages/AdminDashboard/Leads/Meta"
 import AddUser from "./Pages/AdminDashboard/Users/AddUser";
 import AddLeads from "./Pages/AdminDashboard/Leads/AddLeads";
 import UploadExcel from "./Pages/AdminDashboard/Leads/UploadExcel"
+import MannualLeads from "./Pages/AdminDashboard/Leads/MannualLeads";
+import Stats from "./Pages/AdminDashboard/Stats/Stats"
 
 
 // User Layout + Pages
 import UserLayout from "./Pages/UserDashboard/UserLayout";
 import UserDashboard from "./Pages/UserDashboard/UserDashboard";
+
+// Edit Mannual Pages
+import EditMannualLeads from "./Pages/AdminDashboard/Leads/EditMannulLeads";
+import EditUser from "./Pages/AdminDashboard/Leads/EditUser";
+
 
 // Unauthorized
 // import Unauthorized from "./Pages/Unauthorized";
@@ -57,9 +64,20 @@ function AppContent() {
           <Route path="/admin-dashboard/users" element={<AllUsers />} />
           <Route path="/admin-dashboard/meta" element={<Meta />} />
           <Route path="/admin-dashboard/users/add" element={<AddUser />} />
-          <Route path="/admin-dashboard/meta/add" element={<AddLeads/>}/>
-          <Route path="/admin-dashboard/meta/upload-excel" element={<UploadExcel/>}/>
+          <Route path="/admin-dashboard/mannual-leads/add" element={<AddLeads/>}/>
+          <Route path="/admin-dashboard/upload-excel" element={<UploadExcel/>}/>
+          <Route path="/admin-dashboard/mannual-leads" element={<MannualLeads/>}/>
+          <Route path="/admin-dashboard/stats" element={<Stats/>}/>
           {/* Add more nested admin routes here */}
+
+
+          {/* Dynamic Routes */}
+
+ {/* Edit manual lead */}
+ <Route path="/admin-dashboard/mannual-leads/edit/:leadId" element={<EditMannualLeads />} />
+ <Route path="/admin-dashboard/users/edit/:userId" element={<EditUser/>}/>
+
+        
         </Route>
 
         {/* User Routes */}

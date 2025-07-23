@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
   const [formData, setFormData] = useState({
@@ -11,6 +12,7 @@ export default function Signup() {
 
   const [formErrors, setFormErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const navigate = useNavigate();
 
   // Handle input changes
   const handleChange = (e) => {
@@ -169,7 +171,15 @@ export default function Signup() {
             </p>
           )}
         </form>
+        <button
+        onClick={()=>navigate('/')}
+            type="submit"
+            className="w-full py-2 bg-[var(--primary-color)] hover:bg-[var(--primary-dark)] text-white font-semibold rounded-md transition"
+          >
+           Back to Login
+          </button>
       </div>
+      
     </div>
   );
 }

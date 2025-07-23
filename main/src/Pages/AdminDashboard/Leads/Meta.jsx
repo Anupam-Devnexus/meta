@@ -1,16 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaRegEdit } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
-import Data from "../../../Datastore/MetaData.json";
 import "react-resizable/css/styles.css";
 import { useNavigate } from "react-router-dom";
+import useMetaLeads from "../../../Zustand/MetaLeadsGet";
 
 export default function Meta() {
-  const [leads, setLeads] = useState(Data?.leads || []);
+  const { metaleads, error, loading, fetchMetaLeads } = useMetaLeads();
+  const [leads, setLeads] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-
   const [showEditModal, setShowEditModal] = useState(false);
   const [editData, setEditData] = useState(null);
 
@@ -19,21 +19,37 @@ export default function Meta() {
   const itemsPerPage = 10;
   const leadFields = ["created_time", "created_at"];
 
-  const leadFieldHeaders = leadFields.map(field =>
-    field.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+  // Fetch leads on component mount
+  useEffect(() => {
+    fetchMetaLeads();
+  }, []);
+
+  // Sync leads from global state
+  useEffect(() => {
+    if (metaleads?.leads) {
+      setLeads(metaleads.leads);
+    }
+  }, [metaleads]);
+
+  // Extract keys for dynamic AllFields columns safely
+  const allFieldKeys = leads[0]?.AllFields ? Object.keys(leads[0].AllFields) : [];
+
+  // Format headers
+  const leadFieldHeaders = leadFields.map(
+    (field) => field.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
   );
 
-  const allFieldKeys = leads[0] ? Object.keys(leads[0].AllFields) : [];
   const allFieldHeaders = allFieldKeys.map(
-    key => key.charAt(0).toUpperCase() + key.slice(1)
+    (key) => key.charAt(0).toUpperCase() + key.slice(1)
   );
 
-  const headers = ["ID", ...leadFieldHeaders, ...allFieldHeaders, "Action"];
+  const headers = ["ID", ...leadFieldHeaders, ...allFieldHeaders, "Actions"];
 
+  // Prepare rows for current page
   const rows = leads.map((lead) => {
     const id = lead._id;
-    const leadFieldValues = leadFields.map(field => lead[field] || "-");
-    const allFieldValues = allFieldKeys.map(key => lead.AllFields[key] || "-");
+    const leadFieldValues = leadFields.map((field) => lead[field] || "-");
+    const allFieldValues = allFieldKeys.map((key) => lead.AllFields[key] || "-");
     return [id, ...leadFieldValues, ...allFieldValues];
   });
 
@@ -42,30 +58,31 @@ export default function Meta() {
   const currentRows = rows.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(rows.length / itemsPerPage);
 
+  // Delete handlers
   const handleDeleteClick = (id) => {
     setDeleteId(id);
     setShowDeleteModal(true);
   };
 
   const confirmDelete = () => {
-    const updatedLeads = leads.filter(lead => lead._id !== deleteId);
-    setLeads(updatedLeads);
+    setLeads((prev) => prev.filter((lead) => lead._id !== deleteId));
     setShowDeleteModal(false);
     setDeleteId(null);
   };
 
+  // Edit handlers
   const handleEditClick = (id) => {
-    const leadToEdit = leads.find(lead => lead._id === id);
+    const leadToEdit = leads.find((lead) => lead._id === id);
     setEditData({ ...leadToEdit });
     setShowEditModal(true);
   };
 
   const handleEditChange = (e, field, type = "root") => {
     const value = e.target.value;
-    setEditData(prev => {
+    setEditData((prev) => {
       if (type === "root") {
         return { ...prev, [field]: value };
-      } else {
+      } else if (type === "AllFields") {
         return {
           ...prev,
           AllFields: {
@@ -74,116 +91,142 @@ export default function Meta() {
           },
         };
       }
+      return prev;
     });
   };
 
   const saveEdit = () => {
-    const updatedLeads = leads.map(lead =>
-      lead._id === editData._id ? editData : lead
+    setLeads((prev) =>
+      prev.map((lead) => (lead._id === editData._id ? editData : lead))
     );
-    setLeads(updatedLeads);
     setShowEditModal(false);
     setEditData(null);
   };
 
   return (
-    <section className="w-full bg-gray-50">
+    <section className="w-full bg-gray-50 min-h-screen p-6">
       {/* Header */}
-      <div className="flex justify-between items-center p-4 bg-white shadow-sm">
-        <h2 className="text-2xl font-semibold">Meta</h2>
-        <div className="flex gap-3">
-          <button
-          onClick={()=> navigate("/admin-dashboard/meta/add")}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            Add Leads
-          </button>
-          <button
-          onClick={() => navigate("/admin-dashboard/meta/upload-excel")}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-            Upload Excel File
-          </button>
-        </div>
-      </div>
+      <header className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-extrabold text-gray-800">Meta Leads</h1>
+        {/* You can add action buttons here if needed */}
+      </header>
+
+      {/* Loading/Error */}
+      {loading && (
+        <p className="text-center text-blue-600 font-medium my-4">Loading data...</p>
+      )}
+      {error && (
+        <p className="text-center text-red-600 font-medium my-4">
+          Error loading data: {error.message || error}
+        </p>
+      )}
 
       {/* Table */}
-      <div className="overflow-auto p-4">
-        <table className="table-auto min-w-full text-sm bg-white shadow rounded">
+      <div className="overflow-x-auto rounded shadow bg-white">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-100 sticky top-0 z-10">
             <tr>
-              {headers.map((header, index) => (
+              {headers.map((header, i) => (
                 <th
-                  key={index}
-                  className="px-4 py-2 text-left text-gray-700 font-semibold border-b whitespace-nowrap"
+                  key={i}
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider select-none"
                 >
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
-            {currentRows.map((row, rowIndex) => (
-              <tr key={rowIndex} className="hover:bg-gray-100 transition">
-                {row.map((cell, colIndex) => (
+          <tbody className="divide-y divide-gray-200">
+            {currentRows.length === 0 && (
+              <tr>
+                <td colSpan={headers.length} className="py-6 text-center text-gray-400">
+                  No leads found.
+                </td>
+              </tr>
+            )}
+            {currentRows.map((row, idx) => (
+              <tr
+                key={idx}
+                className="hover:bg-gray-50 transition-colors duration-150 cursor-default"
+              >
+                {row.map((cell, i) => (
                   <td
-                    key={colIndex}
-                    className="px-4 py-2 border-b text-gray-800 whitespace-nowrap"
+                    key={i}
+                    className="px-6 py-4 whitespace-nowrap text-gray-800 text-sm"
                   >
                     {cell}
                   </td>
                 ))}
-                <td className="px-4 py-2 border-b">
-                  <div className="flex gap-2 text-xl">
-                    <FaRegEdit
-                      className="text-blue-500 cursor-pointer hover:text-blue-700"
-                      onClick={() => handleEditClick(row[0])}
-                    />
-                    <MdDelete
-                      className="text-red-500 cursor-pointer hover:text-red-700"
-                      onClick={() => handleDeleteClick(row[0])}
-                    />
-                  </div>
+
+                {/* Actions */}
+                <td className="px-6 py-4 whitespace-nowrap flex items-center gap-4">
+                  <button
+                    onClick={() => handleEditClick(row[0])}
+                    aria-label="Edit lead"
+                    className="text-blue-600 hover:text-blue-800 transition"
+                  >
+                    <FaRegEdit size={18} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteClick(row[0])}
+                    aria-label="Delete lead"
+                    className="text-red-600 hover:text-red-800 transition"
+                  >
+                    <MdDelete size={20} />
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-
-        {/* Pagination */}
-        <div className="mt-4 flex justify-center gap-2">
-          {Array.from({ length: totalPages }, (_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentPage(idx + 1)}
-              className={`px-3 py-1 rounded border ${
-                currentPage === idx + 1
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-700 hover:bg-blue-100"
-              }`}
-            >
-              {idx + 1}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <nav
+          className="mt-6 flex justify-center space-x-2"
+          aria-label="Pagination"
+        >
+          {[...Array(totalPages)].map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentPage(i + 1)}
+              className={`px-4 py-2 rounded-md text-sm font-medium ${
+                currentPage === i + 1
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-700 hover:bg-blue-50"
+              } focus:outline-none focus:ring-2 focus:ring-blue-400`}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      {/* Delete Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-md shadow-md text-center max-w-md w-full">
-            <h3 className="text-lg font-semibold text-red-600">Confirm Delete</h3>
-            <p className="text-gray-600 my-4">Are you sure you want to delete this row?</p>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 text-center">
+            <h2 className="text-xl font-semibold text-red-600 mb-4">
+              Confirm Delete
+            </h2>
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to delete this lead? This action cannot be
+              undone.
+            </p>
             <div className="flex justify-center gap-4">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
+                className="px-5 py-2 rounded-md border border-gray-300 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                className="px-5 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
               >
-                Confirm
+                Delete
               </button>
             </div>
           </div>
@@ -192,49 +235,71 @@ export default function Meta() {
 
       {/* Edit Modal */}
       {showEditModal && editData && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-md shadow-md max-w-xl w-full">
-            <h3 className="text-lg font-semibold text-blue-600 mb-4">Edit Lead</h3>
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
-              {leadFields.map((field, idx) => (
-                <div key={idx}>
-                  <label className="text-sm font-medium block">
-                    {field.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 max-h-[80vh] overflow-y-auto">
+            <h2 className="text-xl font-semibold text-blue-700 mb-6">Edit Lead</h2>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                saveEdit();
+              }}
+              className="space-y-4"
+            >
+              {/* Root fields */}
+              {leadFields.map((field, i) => (
+                <div key={i}>
+                  <label
+                    htmlFor={field}
+                    className="block text-sm font-medium text-gray-700 mb-1 select-none"
+                  >
+                    {field.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                   </label>
                   <input
+                    id={field}
                     type="text"
-                    value={editData[field]}
-                    onChange={(e) => handleEditChange(e, field)}
-                    className="border rounded w-full px-2 py-1"
+                    value={editData[field] || ""}
+                    onChange={(e) => handleEditChange(e, field, "root")}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   />
                 </div>
               ))}
-              {allFieldKeys.map((key, idx) => (
-                <div key={idx}>
-                  <label className="text-sm font-medium block">{key}</label>
+
+              {/* AllFields dynamic */}
+              {allFieldKeys.map((key, i) => (
+                <div key={i}>
+                  <label
+                    htmlFor={`allfields-${key}`}
+                    className="block text-sm font-medium text-gray-700 mb-1 select-none"
+                  >
+                    {key.charAt(0).toUpperCase() + key.slice(1)}
+                  </label>
                   <input
+                    id={`allfields-${key}`}
                     type="text"
-                    value={editData.AllFields[key]}
-                    onChange={(e) => handleEditChange(e, key, "allFields")}
-                    className="border rounded w-full px-2 py-1"
+                    value={editData.AllFields?.[key] || ""}
+                    onChange={(e) => handleEditChange(e, key, "AllFields")}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   />
                 </div>
               ))}
-            </div>
-            <div className="flex justify-end gap-4 mt-4">
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveEdit}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Save Changes
-              </button>
-            </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-4 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

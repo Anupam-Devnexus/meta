@@ -11,10 +11,10 @@ const mockUsers = [
 
 export default function Login() {
   const navigate = useNavigate();
-  const { setUser } = useAuth(); // Optional if you're using context
+  const { setUser } = useAuth();
 
-  const [formData, setFormData] = useState({ id: "", password: "" });
-  const [errors, setErrors] = useState({ id: "", password: "", login: "" });
+  const [formData, setFormData] = useState({ id: "", password: "", role: "Admin" }); // 🔧 Added role
+  const [errors, setErrors] = useState({ id: "", password: "", login: "", role: "" });
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
@@ -25,7 +25,7 @@ export default function Login() {
 
   const validate = () => {
     let valid = true;
-    const tempErrors = { id: "", password: "", login: "" };
+    const tempErrors = { id: "", password: "", login: "", role: "" };
 
     if (!formData.id.trim()) {
       tempErrors.id = "Email is required.";
@@ -40,6 +40,11 @@ export default function Login() {
       valid = false;
     }
 
+    if (!formData.role) {
+      tempErrors.role = "Select a role.";
+      valid = false;
+    }
+
     setErrors(tempErrors);
     return valid;
   };
@@ -49,21 +54,34 @@ export default function Login() {
     if (!validate()) return;
 
     const user = mockUsers.find(
-      (u) => u.id === formData.id && u.password === formData.password
+      (u) =>
+        u.id === formData.id &&
+        u.password === formData.password &&
+        u.role === formData.role
     );
 
     if (user) {
+      const tokenPayload = {
+        email: user.id,
+        role: user.role,
+        timestamp: new Date().toISOString(),
+      };
+
+      const token = btoa(JSON.stringify(tokenPayload));
+
       localStorage.setItem("userName", user.name);
       localStorage.setItem("userEmail", user.id);
       localStorage.setItem("userRole", user.role);
-      setUser && setUser(user); // Optional if using context
+      localStorage.setItem("token", token);
 
-      const route = user.role.toLowerCase(); // "admin", "user"
+      setUser && setUser(user);
+
+      const route = user.role.toLowerCase();
       navigate(`/${route}-dashboard`);
     } else {
       setErrors((prev) => ({
         ...prev,
-        login: "Invalid credentials. Please try again.",
+        login: "Invalid credentials or role. Please try again.",
       }));
     }
   };
@@ -81,7 +99,7 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="w-full md:w-2/3 space-y-6">
           <h2 className="text-2xl font-semibold text-[#141414]">Login to Dashboard</h2>
 
-          {/* Email / ID */}
+          {/* Email */}
           <div className="flex flex-col gap-1">
             <label htmlFor="id" className="text-sm font-medium text-gray-700">Email</label>
             <input
@@ -119,6 +137,25 @@ export default function Login() {
             {errors.password && <span className="text-red-500 text-sm mt-1">{errors.password}</span>}
           </div>
 
+          {/* Role Dropdown */}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="role" className="text-sm font-medium text-gray-700">Role</label>
+            <select
+              name="role"
+              id="role"
+              value={formData.role}
+              onChange={handleChange}
+              className={`w-full px-4 py-2 border-b outline-none ${
+                errors.role ? "border-red-500" : "border-[#dcdc3c]"
+              }`}
+            >
+              <option value="">Select Role</option>
+              <option value="Admin">Admin</option>
+              <option value="User">User</option>
+            </select>
+            {errors.role && <span className="text-red-500 text-sm">{errors.role}</span>}
+          </div>
+
           {/* Submit Button */}
           <div>
             <button
@@ -136,7 +173,7 @@ export default function Login() {
         <div className="text-red-500 text-sm mt-4">{errors.login}</div>
       )}
 
-      {/* Display test credentials */}
+      {/* Test Credentials */}
       <div className="mt-6 w-full max-w-3xl px-6">
         <h3 className="text-md font-semibold mb-2">Test Credentials:</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-700">

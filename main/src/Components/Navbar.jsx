@@ -14,7 +14,7 @@ export default function Navbar() {
   const storedName = localStorage.getItem("userName") || "";
 
   const adminNav = [
-    { icon: <RiAdminLine />, label: "Admin Panel", path: "/admin-dashboard" },
+    { icon: <RiAdminLine />, label: "Admin Dashboard", path: "/admin-dashboard" },
     {
       icon: <SiGoogleads />,
       label: "Leads",
@@ -25,7 +25,7 @@ export default function Navbar() {
           sublabel: "Meta",
           path: "/admin-dashboard/meta",
           children: [
-            {icon: <SiGoogleads/> , sublabel:"Meta", path:"/admin-dashboard/meta"},
+            { icon: <SiGoogleads />, sublabel: "Meta", path: "/admin-dashboard/meta" },
             { icon: <SiGoogleads />, sublabel: "Digital Marketing", path: "/admin-dashboard/meta/digital" },
             { icon: <SiGoogleads />, sublabel: "CA", path: "/admin-dashboard/meta/ca" },
             { icon: <SiGoogleads />, sublabel: "Web", path: "/admin-dashboard/meta/web" },
@@ -36,12 +36,17 @@ export default function Navbar() {
           sublabel: "Third Party",
           path: "/admin-dashboard/third-party",
           children: [
-           
+
             { icon: <SiGoogleads />, sublabel: "Manual", path: "/admin-dashboard/third-party/digital" },
-            
+
             { icon: <SiGoogleads />, sublabel: "Web", path: "/admin-dashboard/third-party/web" },
           ],
         },
+        {
+          icon: <SiGoogleads />,
+          sublabel: "Mannual Leads",
+          path: "/admin-dashboard/mannual-leads",
+        }
       ],
     },
     {
@@ -49,10 +54,12 @@ export default function Navbar() {
       label: "Users",
       path: "/admin-dashboard/users",
       submenu: [
-        {icon:<FaUsers/> , sublabel:"All Users", path:"/admin-dashboard/users"},
-        { icon: <FaUsers />, sublabel: "Pending Approval", path: "/admin-dashboard/users/pending" },
+        { icon: <FaUsers />, sublabel: "All Users", path: "/admin-dashboard/users" },
       ],
     },
+    {
+      icon: <RiAdminLine />, label: "Stats", path: "/admin-dashboard/stats"
+    }
   ];
 
   const userNav = [
