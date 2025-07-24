@@ -4,10 +4,15 @@ import { MdDelete } from "react-icons/md";
 import "react-resizable/css/styles.css";
 import { useNavigate } from "react-router-dom";
 import useMetaLeads from "../../../Zustand/MetaLeadsGet";
+import metainsights from "../../../Zustand/MetaIns";
+import useNewMetaLeads from "../../../Zustand/NewMetaLeads"
 
 export default function Meta() {
   const { metaleads, error, loading, fetchMetaLeads } = useMetaLeads();
+  const { fetchinsights, merror, mloading, data } = metainsights()
+  const { fetchNewMeta, newleadsdata } = useNewMetaLeads()
   const [leads, setLeads] = useState([]);
+  const [mleads, setMleads] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
@@ -22,6 +27,8 @@ export default function Meta() {
   // Fetch leads on component mount
   useEffect(() => {
     fetchMetaLeads();
+    fetchinsights();
+    fetchNewMeta();
   }, []);
 
   // Sync leads from global state
@@ -29,7 +36,12 @@ export default function Meta() {
     if (metaleads?.leads) {
       setLeads(metaleads.leads);
     }
+    if (!merror) {
+      setMleads(data)
+    }
   }, [metaleads]);
+  console.log(data.data)
+
 
   // Extract keys for dynamic AllFields columns safely
   const allFieldKeys = leads[0]?.AllFields ? Object.keys(leads[0].AllFields) : [];
@@ -103,13 +115,78 @@ export default function Meta() {
     setEditData(null);
   };
 
+  // InsightsCard.jsx
+  const InsightsCard = ({ name, data }) => {
+    return (
+      <div className="flex items-center gap-4 justify-between p-3 bg-blue-400 text-white font-bold rounded-md">
+        <span>{name}</span>
+        <span>{data ? data : 21}</span>
+      </div>
+    );
+  };
+
+  console.log(newleadsdata)
+  const NewMetaDataCard = ({ message, totalFetched, totalNew, savedLeadIds = [] }) => {
+    return (
+      <div className="max-w-full mx-auto mb-3 bg-white rounded-lg shadow-md p-3 border border-gray-200">
+        <div className="flex items-center p-3 justify-between">
+
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Meta Leads Summary</h2>
+
+          {message && (
+            <p className="mb-4 text-gray-600 italic border-l-4 border-blue-400 pl-3">
+              {message}
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 text-center">
+          <div className="bg-blue-100 rounded-md p-4">
+            <p className="text-3xl font-bold text-blue-700">{totalFetched ?? 0}</p>
+            <p className="text-sm text-blue-600 mt-1">Total Fetched</p>
+          </div>
+
+          <div className="bg-green-100 rounded-md p-4">
+            <p className="text-3xl font-bold text-green-700">{totalNew ?? 0}</p>
+            <p className="text-sm text-green-600 mt-1">New Leads</p>
+          </div>
+
+          <div className="bg-purple-100 rounded-md p-4 col-span-2">
+            <p className="text-3xl font-bold text-purple-700">{savedLeadIds.length}</p>
+            <p className="text-sm text-purple-600 mt-1">Saved Leads</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+
+  const insight = data?.data?.[0];
+  console.log("insight", insight)
+
   return (
     <section className="w-full bg-gray-50 min-h-screen p-6">
       {/* Header */}
-      <header className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-extrabold text-gray-800">Meta Leads</h1>
-        {/* You can add action buttons here if needed */}
+      <header className="mb-6">
+        <h1 className="text-3xl font-extrabold text-gray-800 mb-4">Meta Leads</h1>
+
+        {insight && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <InsightsCard name="Clicks" data={insight.clicks} />
+            <InsightsCard name="Impressions" data={insight.impressions} />
+            <InsightsCard name="Spend" data={insight.spend} />
+            <InsightsCard name="Start Date" data={insight.date_start} />
+            <InsightsCard name="End Date" data={insight.date_stop} />
+          </div>
+        )}
       </header>
+
+      <NewMetaDataCard
+        message={newleadsdata.message}
+        totalFetched={newleadsdata.totalFetched}
+        totalNew={newleadsdata.totalNew}
+      />
+
 
       {/* Loading/Error */}
       {loading && (
@@ -192,11 +269,10 @@ export default function Meta() {
             <button
               key={i}
               onClick={() => setCurrentPage(i + 1)}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                currentPage === i + 1
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-white text-gray-700 hover:bg-blue-50"
-              } focus:outline-none focus:ring-2 focus:ring-blue-400`}
+              className={`px-4 py-2 rounded-md text-sm font-medium ${currentPage === i + 1
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-gray-700 hover:bg-blue-50"
+                } focus:outline-none focus:ring-2 focus:ring-blue-400`}
             >
               {i + 1}
             </button>

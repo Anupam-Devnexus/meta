@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
 
 export default function Signup() {
   const [formData, setFormData] = useState({
@@ -66,11 +68,30 @@ export default function Signup() {
   };
 
   // Mock post function (replace with real API)
-  const postData = (data) => {
-    console.log("Posting to server:", data);
-    alert("Admin registered successfully!");
-    // You can use axios or fetch here
-  };
+ const postData = async (data) => {
+  try {
+    const response = await axios.post("http://ec2-15-206-164-254.ap-south-1.compute.amazonaws.com:3000/auth/api/signup-users", data);
+
+    if (response.status === 201) {
+      alert("Admin registered successfully!");
+      setSubmitted(true);
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        role: "Admin",
+      });
+    }
+  } catch (error) {
+    if (error.response && error.response.status === 409) {
+      setFormErrors({ email: "Email already exists" });
+    } else {
+      alert("Something went wrong. Please try again later.");
+    }
+  }
+};
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-[var(--bg-color)]">

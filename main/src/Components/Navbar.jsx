@@ -59,6 +59,9 @@ export default function Navbar() {
     },
     {
       icon: <RiAdminLine />, label: "Stats", path: "/admin-dashboard/stats"
+    },
+    {
+      icon:<FaUsers/>,label:"Contact",path:"/admin-dashboard/contact"
     }
   ];
 

@@ -22,6 +22,7 @@ import AddLeads from "./Pages/AdminDashboard/Leads/AddLeads";
 import UploadExcel from "./Pages/AdminDashboard/Leads/UploadExcel"
 import MannualLeads from "./Pages/AdminDashboard/Leads/MannualLeads";
 import Stats from "./Pages/AdminDashboard/Stats/Stats"
+import Contact from "./Pages/AdminDashboard/Contact/Contact";
 
 
 // User Layout + Pages
@@ -48,7 +49,7 @@ function AppContent() {
 
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<Login />} />
+        <Route index path="/auth/api/signin-users" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
         {/* Admin Routes */}
@@ -68,6 +69,7 @@ function AppContent() {
           <Route path="/admin-dashboard/upload-excel" element={<UploadExcel/>}/>
           <Route path="/admin-dashboard/mannual-leads" element={<MannualLeads/>}/>
           <Route path="/admin-dashboard/stats" element={<Stats/>}/>
+          <Route path="/admin-dashboard/contact" element={<Contact/>}/>
           {/* Add more nested admin routes here */}
 
 
